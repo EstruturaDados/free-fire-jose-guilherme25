@@ -18,6 +18,8 @@ void inserirItem(Item mochila[], int *qtd);
 void removerItem(Item mochila[], int *qtd);
 void listarItens(Item mochila[], int qtd);
 void buscarItem(Item mochila[], int qtd);
+void ordenarItens(Item mochila[], int qtd);
+int buscaBinaria(Item mochila[], int qtd, char nomeBusca[]);
 
 int main() {
     Item mochila[MAX_ITENS];
@@ -60,6 +62,33 @@ int main() {
     return 0;
 }
 
+// Converte string para minúsculas
+void toLowerStr(char *str) {
+    for (int i = 0; str[i]; i++) {
+        str[i] = tolower((unsigned char)str[i]);
+    }
+}
+
+// Ordena os itens por nome (ordem alfabética)
+void ordenarItens(Item mochila[], int qtd) {
+    Item temp;
+    for (int i = 0; i < qtd - 1; i++) {
+        for (int j = i + 1; j < qtd; j++) {
+            char nome1[30], nome2[30];
+            strcpy(nome1, mochila[i].nome);
+            strcpy(nome2, mochila[j].nome);
+            toLowerStr(nome1);
+            toLowerStr(nome2);
+
+            if (strcmp(nome1, nome2) > 0) {
+                temp = mochila[i];
+                mochila[i] = mochila[j];
+                mochila[j] = temp;
+            }
+        }
+    }
+}
+
 // Função para adicionar um novo item
 void inserirItem(Item mochila[], int *qtd) {
     if (*qtd >= MAX_ITENS) {
@@ -85,6 +114,9 @@ void inserirItem(Item mochila[], int *qtd) {
     mochila[*qtd] = novoItem;
     (*qtd)++;
 
+    // Ordena automaticamente após inserir
+    ordenarItens(mochila, *qtd);
+
     printf("\nItem adicionado com sucesso!\n");
     listarItens(mochila, *qtd);
 }
@@ -100,32 +132,21 @@ void removerItem(Item mochila[], int *qtd) {
     printf("\nDigite o nome do item que deseja remover: ");
     fgets(nomeRemover, sizeof(nomeRemover), stdin);
     nomeRemover[strcspn(nomeRemover, "\n")] = '\0';
+    toLowerStr(nomeRemover);
 
-    for (int i = 0; nomeRemover[i]; i++) {
-        nomeRemover[i] = tolower(nomeRemover[i]);
+    int index = buscaBinaria(mochila, *qtd, nomeRemover);
+    if (index == -1) {
+        printf("\nItem nao encontrado!\n");
+        return;
     }
 
-    for (int i = 0; i < *qtd; i++) {
-        char nomeItem[30];
-        strcpy(nomeItem, mochila[i].nome);
-
-        for (int j = 0; nomeItem[j]; j++) {
-            nomeItem[j] = tolower(nomeItem[j]);
-        }
-
-        if (strcmp(nomeItem, nomeRemover) == 0) {
-            for (int j = i; j < *qtd - 1; j++) {
-                mochila[j] = mochila[j + 1];
-            }
-            (*qtd)--;
-
-            printf("\nItem removido com sucesso!\n");
-            listarItens(mochila, *qtd);
-            return;
-        }
+    for (int j = index; j < *qtd - 1; j++) {
+        mochila[j] = mochila[j + 1];
     }
+    (*qtd)--;
 
-    printf("\nItem nao encontrado!\n");
+    printf("\nItem removido com sucesso!\n");
+    listarItens(mochila, *qtd);
 }
 
 // Função para listar todos os itens
@@ -142,7 +163,31 @@ void listarItens(Item mochila[], int qtd) {
     }
 }
 
-// Função para buscar um item (ignora maiúsculas/minúsculas)
+// Função de busca binária (retorna índice ou -1 se não encontrar)
+int buscaBinaria(Item mochila[], int qtd, char nomeBusca[]) {
+    int inicio = 0, fim = qtd - 1;
+
+    while (inicio <= fim) {
+        int meio = (inicio + fim) / 2;
+
+        char nomeItem[30];
+        strcpy(nomeItem, mochila[meio].nome);
+        toLowerStr(nomeItem);
+
+        int cmp = strcmp(nomeItem, nomeBusca);
+
+        if (cmp == 0) {
+            return meio;
+        } else if (cmp < 0) {
+            inicio = meio + 1;
+        } else {
+            fim = meio - 1;
+        }
+    }
+    return -1;
+}
+
+// Função para buscar um item (usa busca binária)
 void buscarItem(Item mochila[], int qtd) {
     if (qtd == 0) {
         printf("\nA mochila esta vazia.\n");
@@ -153,26 +198,15 @@ void buscarItem(Item mochila[], int qtd) {
     printf("\nDigite o nome do item que deseja buscar: ");
     fgets(nomeBusca, sizeof(nomeBusca), stdin);
     nomeBusca[strcspn(nomeBusca, "\n")] = '\0';
+    toLowerStr(nomeBusca);
 
-    for (int i = 0; nomeBusca[i]; i++) {
-        nomeBusca[i] = tolower(nomeBusca[i]);
+    int index = buscaBinaria(mochila, qtd, nomeBusca);
+
+    if (index != -1) {
+        printf("\nItem encontrado!\n");
+        printf("Nome: %s\nTipo: %s\nQuantidade: %d\n",
+               mochila[index].nome, mochila[index].tipo, mochila[index].quantidade);
+    } else {
+        printf("\nItem nao encontrado!\n");
     }
-
-    for (int i = 0; i < qtd; i++) {
-        char nomeItem[30];
-        strcpy(nomeItem, mochila[i].nome);
-
-        for (int j = 0; nomeItem[j]; j++) {
-            nomeItem[j] = tolower(nomeItem[j]);
-        }
-
-        if (strcmp(nomeItem, nomeBusca) == 0) {
-            printf("\nItem encontrado!\n");
-            printf("Nome: %s\nTipo: %s\nQuantidade: %d\n",
-                   mochila[i].nome, mochila[i].tipo, mochila[i].quantidade);
-            return;
-        }
-    }
-
-    printf("\nItem nao encontrado!\n");
 }
